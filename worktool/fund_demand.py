@@ -19,12 +19,17 @@ exchange = {
 	'GBP':'8.62',
 	'JPY':'0.062'
 }
-
+#选择汇率
 def get_Exchange(current):
 	return float(exchange[current])
-
+#格式化货币
 def RMB_format(value):
-	return ('%.2f'%value)
+	return float('%.2f'%value)
+#调整列位置
+def change_loc(df,col_to_set,position):
+	df_col = df[col_to_set]
+	df.drop(labels=[col_to_set],axis=1,inplace=True)	
+	df.insert(position,col_to_set,df_col)
 
 #汇总本周需要付款的订单详情
 def pay_this_week(data,month_start,day_start,month_end,day_end,*,year=2017):
@@ -62,6 +67,12 @@ def paymt_pivot(df):
 	df_pv_isZD.columns = ['中电资金']
 	df_pv_isZD['date'] = df_pv_isZD.index
 
+	#付款账户
+	pay_account = pd.pivot_table(df,index=['要求付款时间'],values=['RMB'],columns=['付款公司'],aggfunc=[np.sum],fill_value=0)['sum']['RMB']
+	pay_account = pd.DataFrame(pay_account)
+	# pay_account.columns = ['精盈实业']
+	pay_account['date'] = pay_account.index
+
 	#初始化表格，判断是否有赎货
 	if '中电赎货' not in df['资金来源'].values:
 		df2 = pd.DataFrame((np.arange(16).reshape(1,16)),columns=df.columns)
@@ -76,23 +87,25 @@ def paymt_pivot(df):
 	df_pv_redeem = pd.DataFrame(pv_isRedeem)
 	df_pv_redeem.columns = ['中电赎货']
 	df_pv_redeem['date'] = df_pv_redeem.index
+
 	
 	
 
 	#合并处理的数据并以日期列作为索引
-	pv = pd.merge(pd.merge(pd.merge(pv_all,df_pv_redeem),df_pv_isZD),df_pv_isCredit,how='left',on='date')
+	pv = pd.merge(pd.merge(pd.merge(pd.merge(pv_all,df_pv_redeem),df_pv_isZD),df_pv_isCredit),pay_account,how='left',on='date')
 	pv.set_index('date',inplace=True,drop=True)
 
 	pv['应付供应商资金'] = pv['应付总额'] - pv['中电赎货']
 	pv['自有资金'] = pv['应付供应商资金'] - pv['账期资金'] - pv['中电资金']
-	pv.ix['总计'] = {'应付总额':pv['应付总额'].sum(),'中电赎货':pv['中电赎货'].sum(),'中电资金':pv['中电资金'].sum(),'账期资金':pv['账期资金'].sum(),'应付供应商资金':pv['应付供应商资金'].sum(),'自有资金':pv['自有资金'].sum()}
+
+
+	pv.ix['总计'] = {'应付总额':pv['应付总额'].sum(),'中电赎货':pv['中电赎货'].sum(),'中电资金':pv['中电资金'].sum(),'账期资金':pv['账期资金'].sum(),'应付供应商资金':pv['应付供应商资金'].sum(),'自有资金':pv['自有资金'].sum(),'精盈实业':pv['精盈实业'].sum(),'跨境国际':pv['跨境国际'].sum()}
 	pv.index = pd.Series(pv.index.tolist()).apply(lambda time:pd.Period(time,freq='D') if (type(time) == pd.tslib.Timestamp) else time)
 	pv.index.name = '日期'
 
 	#调整列位置
-	to_supplier = pv['应付供应商资金']
-	pv.drop(labels=['应付供应商资金'],axis=1,inplace=True)	
-	pv.insert(2,'应付供应商资金',to_supplier)
+	change_loc(pv, '应付供应商资金', 2)
+	change_loc(pv, '自有资金', 5)
 
 	return pv
 
@@ -108,6 +121,6 @@ def output(df,month_start,day_start,month_end,day_end,*,year=2017):
 
 if __name__ == '__main__':
 	tw = output(df,4,17,4,23)
-	# tw = pay_this_week(df,4,15,4,22)
 	print(tw)
+
 	
