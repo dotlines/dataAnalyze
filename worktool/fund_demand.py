@@ -24,7 +24,7 @@ def get_Exchange(current):
 	return float(exchange[current])
 
 def RMB_format(value):
-	return (float('%.2f'%value))
+	return ('%.2f'%value)
 
 #汇总本周需要付款的订单详情
 def pay_this_week(data,month_start,day_start,month_end,day_end,*,year=2017):
@@ -35,7 +35,7 @@ def pay_this_week(data,month_start,day_start,month_end,day_end,*,year=2017):
 	print('本周总付款订单供%d笔'%len(df))
 
 	df['RMB'] = df['币种'].map(get_Exchange) * df['要求付款金额']
-	df['RMB'] = df['RMB'].map(RMB_format)
+	# df['RMB'] = df['RMB'].map(RMB_format)
 	# print(df)
 	return df
 	
@@ -84,7 +84,7 @@ def paymt_pivot(df):
 	pv.set_index('date',inplace=True,drop=True)
 
 	pv['应付供应商资金'] = pv['应付总额'] - pv['中电赎货']
-	pv['自有资金'] = pv['应付供应商资金'] - pv['账期资金']
+	pv['自有资金'] = pv['应付供应商资金'] - pv['账期资金'] - pv['中电资金']
 	pv.ix['总计'] = {'应付总额':pv['应付总额'].sum(),'中电赎货':pv['中电赎货'].sum(),'中电资金':pv['中电资金'].sum(),'账期资金':pv['账期资金'].sum(),'应付供应商资金':pv['应付供应商资金'].sum(),'自有资金':pv['自有资金'].sum()}
 	pv.index = pd.Series(pv.index.tolist()).apply(lambda time:pd.Period(time,freq='D') if (type(time) == pd.tslib.Timestamp) else time)
 	pv.index.name = '日期'
@@ -98,14 +98,16 @@ def paymt_pivot(df):
 
 def output(df,month_start,day_start,month_end,day_end,*,year=2017):
 	tw = paymt_pivot(pay_this_week(df,month_start,day_start,month_end,day_end,year=year))
+	#格式化数据
+	for col in tw.columns:
+		tw[col] = tw[col].apply(RMB_format)
 	# tw.to_csv('this_week_result.csv')
+	tw.to_xlsx('this_week_result.xlsx')
 	# print(tw)
 	return tw
 
 if __name__ == '__main__':
 	tw = output(df,4,17,4,23)
 	# tw = pay_this_week(df,4,15,4,22)
-		
 	print(tw)
-	# df2.to_excel('test.xlsx')
-	# print(df.ix[42])
+	
