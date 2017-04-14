@@ -31,11 +31,12 @@ def pay_this_week(data,month_start,day_start,month_end,day_end,*,year=2017):
 	df = data[(data['出纳付款时间'].isnull()) & (data['要求付款时间'] >= pd.datetime(year,month_start,day_start)) & (data['要求付款时间'] <= pd.datetime(year,month_end,day_end))]
 	del df['分组：步骤号']
 	# df['要求付款时间'] = pd.to_datetime(df['要求付款时间'],format='%Y%m')
-	df.index = df['flow_num']
+	df.index = df['流水号']
 	print('本周总付款订单供%d笔'%len(df))
 
 	df['RMB'] = df['币种'].map(get_Exchange) * df['要求付款金额']
 	df['RMB'] = df['RMB'].map(RMB_format)
+	# print(df)
 	return df
 	
 
@@ -61,39 +62,50 @@ def paymt_pivot(df):
 	df_pv_isZD.columns = ['中电资金']
 	df_pv_isZD['date'] = df_pv_isZD.index
 
+	#初始化表格，判断是否有赎货
+	if '中电赎货' not in df['资金来源'].values:
+		df2 = pd.DataFrame((np.arange(16).reshape(1,16)),columns=df.columns)
+		df2['资金来源'] = '中电赎货'
+		df2['要求付款金额'] = 0
+		df2['要求付款时间'] = pd.datetime(2017,1,1)
+		df = df.append(df2,ignore_index=True)
+	
 	#获取ZD赎货数据
 	ZD_redeem = pd.pivot_table(df,index=['要求付款时间'],values=['RMB'],columns=['资金来源'],aggfunc=[np.sum],fill_value=0)
 	pv_isRedeem = ZD_redeem['sum']['RMB']['中电赎货'] 
 	df_pv_redeem = pd.DataFrame(pv_isRedeem)
 	df_pv_redeem.columns = ['中电赎货']
 	df_pv_redeem['date'] = df_pv_redeem.index
+	
+	
 
 	#合并处理的数据并以日期列作为索引
 	pv = pd.merge(pd.merge(pd.merge(pv_all,df_pv_redeem),df_pv_isZD),df_pv_isCredit,how='left',on='date')
-	date = pv.pop('date')
-	pv.insert(0,'date',date)
-	pv.index = pv['date']
+	pv.set_index('date',inplace=True,drop=True)
+
+	pv['应付供应商资金'] = pv['应付总额'] - pv['中电赎货']
+	pv['自有资金'] = pv['应付供应商资金'] - pv['账期资金']
+	pv.ix['总计'] = {'应付总额':pv['应付总额'].sum(),'中电赎货':pv['中电赎货'].sum(),'中电资金':pv['中电资金'].sum(),'账期资金':pv['账期资金'].sum(),'应付供应商资金':pv['应付供应商资金'].sum(),'自有资金':pv['自有资金'].sum()}
+	pv.index = pd.Series(pv.index.tolist()).apply(lambda time:pd.Period(time,freq='D') if (type(time) == pd.tslib.Timestamp) else time)
 	pv.index.name = '日期'
-	del pv['date']
+
+	#调整列位置
+	to_supplier = pv['应付供应商资金']
+	pv.drop(labels=['应付供应商资金'],axis=1,inplace=True)	
+	pv.insert(2,'应付供应商资金',to_supplier)
+
 	return pv
 
 def output(df,month_start,day_start,month_end,day_end,*,year=2017):
 	tw = paymt_pivot(pay_this_week(df,month_start,day_start,month_end,day_end,year=year))
-	tw['跨境资金'] = tw['应付总额'] - tw['中电赎货']
-	tw.ix['总计'] = {'应付总额':tw['应付总额'].sum(),'中电赎货':tw['中电赎货'].sum(),'中电资金':tw['中电资金'].sum(),'账期资金':tw['账期资金'].sum(),'跨境资金':tw['跨境资金'].sum()}
-	tw.index.name = '日期'
-	tw['date'] = tw.index
-	tw['date'] = tw['date'].apply(lambda time:pd.Period(time,freq='D') if (type(time) == pd.tslib.Timestamp) else time)
-	tw.index = tw['date']
-	del tw['date']
-	tw.to_csv('this_week_result.csv')
+	# tw.to_csv('this_week_result.csv')
+	# print(tw)
 	return tw
 
 if __name__ == '__main__':
-	# tw_df = pay_this_week(df,4,15,4,22)
-	# tw_pv = paymt_pivot(tw_df)
-	tw = output(df,4,15,4,22)
-	
+	tw = output(df,4,17,4,23)
+	# tw = pay_this_week(df,4,15,4,22)
+		
 	print(tw)
-	
-	
+	# df2.to_excel('test.xlsx')
+	# print(df.ix[42])
