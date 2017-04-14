@@ -102,7 +102,7 @@ def output(df,month_start,day_start,month_end,day_end,*,year=2017):
 	for col in tw.columns:
 		tw[col] = tw[col].apply(RMB_format)
 	# tw.to_csv('this_week_result.csv')
-	tw.to_xlsx('this_week_result.xlsx')
+	tw.to_excel('this_week_result.xlsx')
 	# print(tw)
 	return tw
 
