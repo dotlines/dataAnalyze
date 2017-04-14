@@ -32,8 +32,8 @@ def change_loc(df,col_to_set,position):
 	df.insert(position,col_to_set,df_col)
 
 #汇总本周需要付款的订单详情
-def pay_this_week(data,month_start,day_start,month_end,day_end,*,year=2017):
-	df = data[(data['出纳付款时间'].isnull()) & (data['要求付款时间'] >= pd.datetime(year,month_start,day_start)) & (data['要求付款时间'] <= pd.datetime(year,month_end,day_end))]
+def pay_this_week(data,time_start,time_end):
+	df = data[(data['出纳付款时间'].isnull()) & (data['要求付款时间'] >= pd.Timestamp(time_start)) & (data['要求付款时间'] <= pd.Timestamp(time_end))]
 	del df['分组：步骤号']
 	# df['要求付款时间'] = pd.to_datetime(df['要求付款时间'],format='%Y%m')
 	df.index = df['流水号']
@@ -109,8 +109,8 @@ def paymt_pivot(df):
 
 	return pv
 
-def output(df,month_start,day_start,month_end,day_end,*,year=2017):
-	tw = paymt_pivot(pay_this_week(df,month_start,day_start,month_end,day_end,year=year))
+def output(df,time_start,time_end):
+	tw = paymt_pivot(pay_this_week(df,time_start,time_end))
 	#格式化数据
 	for col in tw.columns:
 		tw[col] = tw[col].apply(RMB_format)
@@ -120,7 +120,10 @@ def output(df,month_start,day_start,month_end,day_end,*,year=2017):
 	return tw
 
 if __name__ == '__main__':
-	tw = output(df,4,17,4,23)
-	print(tw)
+	time_start = input('请输入开始日期(如\'20170101\'):')
+	time_end = input('请输入结束日期(如\'20170101\'):')
+	tw = output(df,time_start,time_end)
+	# print(tw)
+	# print(type(df['要求付款时间'][3]))
 
 	
