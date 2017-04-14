@@ -37,7 +37,13 @@ def pay_this_week(data,time_start,time_end):
 	del df['分组：步骤号']
 	# df['要求付款时间'] = pd.to_datetime(df['要求付款时间'],format='%Y%m')
 	df.index = df['流水号']
-	print('本周总付款订单供%d笔'%len(df))
+
+	# credit_count = len(df[df['账期'] == '是'])
+	# zd_count = len(df[df['资金来源'] == '中电资金'])
+	# print('本周总付款订单共%d笔'%len(df))
+	# print('本周账期结算共%d笔'%credit_count)
+	# print('本周已使用中电资金共%d笔'%zd_count)
+
 
 	df['RMB'] = df['币种'].map(get_Exchange) * df['要求付款金额']
 	# df['RMB'] = df['RMB'].map(RMB_format)
@@ -89,8 +95,6 @@ def paymt_pivot(df):
 	df_pv_redeem['date'] = df_pv_redeem.index
 
 	
-	
-
 	#合并处理的数据并以日期列作为索引
 	pv = pd.merge(pd.merge(pd.merge(pd.merge(pv_all,df_pv_redeem),df_pv_isZD),df_pv_isCredit),pay_account,how='left',on='date')
 	pv.set_index('date',inplace=True,drop=True)
@@ -107,6 +111,17 @@ def paymt_pivot(df):
 	change_loc(pv, '应付供应商资金', 2)
 	change_loc(pv, '自有资金', 5)
 
+	#统计输出
+	credit_count = len(df[df['账期'] == '是'])
+	zd_count = len(df[df['资金来源'] == '中电资金'])
+	redeem_count = len(df[df['资金来源'] == '中电赎货'])
+	print('---------------------------')
+	print('本周总付款订单共%d笔，总额%.2f元（含中电赎货），不排除临时增加采购的需求，实际的资金需求会根据具体的货物情况有变动。'%(len(df),pv.ix['总计']['应付总额']))
+	print('本周中电赎货共%d笔，总额%.2f元'%(redeem_count,pv.ix['总计']['中电赎货']))
+	print('本周账期结算共%d笔，总额%.2f元，付款优先级最高。'%(credit_count,pv.ix['总计']['账期资金']))
+	print('本周已使用中电资金共%d笔，总额%.2f元，优先进行付款。'%(zd_count,pv.ix['总计']['中电资金']))
+	print('---------------------------')
+
 	return pv
 
 def output(df,time_start,time_end):
@@ -122,8 +137,11 @@ def output(df,time_start,time_end):
 if __name__ == '__main__':
 	time_start = input('请输入开始日期(如\'20170101\'):')
 	time_end = input('请输入结束日期(如\'20170101\'):')
+	print('\n')
 	tw = output(df,time_start,time_end)
-	# print(tw)
-	# print(type(df['要求付款时间'][3]))
+	# tw = output(df,'20170418','20170423')
+	# print(tw.ix['总计']['应付总额'])
+	
+
 
 	
