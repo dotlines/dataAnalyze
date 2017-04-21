@@ -14,10 +14,10 @@ except:
 # locale.setlocale(locale.LC_ALL,'')
 exchange = {
 	'HKD':'0.9',
-	'USD':'6.92',
-	'EUR':'7.4',
-	'GBP':'8.62',
-	'JPY':'0.062'
+	'USD':'6.91',
+	'EUR':'7.36',
+	'GBP':'8.7',
+	'JPY':'0.063'
 }
 #选择汇率
 def get_Exchange(current):
@@ -38,11 +38,7 @@ def pay_this_week(data,time_start,time_end):
 	# df['要求付款时间'] = pd.to_datetime(df['要求付款时间'],format='%Y%m')
 	df.index = df['流水号']
 
-	# credit_count = len(df[df['账期'] == '是'])
-	# zd_count = len(df[df['资金来源'] == '中电资金'])
-	# print('本周总付款订单共%d笔'%len(df))
-	# print('本周账期结算共%d笔'%credit_count)
-	# print('本周已使用中电资金共%d笔'%zd_count)
+
 
 
 	df['RMB'] = df['币种'].map(get_Exchange) * df['要求付款金额']
@@ -112,14 +108,18 @@ def paymt_pivot(df):
 	change_loc(pv, '自有资金', 5)
 
 	#统计输出
+
 	credit_count = len(df[df['账期'] == '是'])
 	zd_count = len(df[df['资金来源'] == '中电资金'])
 	redeem_count = len(df[df['资金来源'] == '中电赎货'])
 	print('---------------------------')
+	print('以下为%s年%s月第 周（%s.%s-%s.%s）已提出计划向的采购付款需求详情。\n'%(time_start[:4],time_start[4:6],time_start[4:6],time_start[-2:],time_end[4:6],time_end[-2:]))
 	print('本周总付款订单共%d笔，总额%.2f元（含中电赎货），不排除临时增加采购的需求，实际的资金需求会根据具体的货物情况有变动。'%(len(df),pv.ix['总计']['应付总额']))
 	print('本周中电赎货共%d笔，总额%.2f元'%(redeem_count,pv.ix['总计']['中电赎货']))
 	print('本周账期结算共%d笔，总额%.2f元，付款优先级最高。'%(credit_count,pv.ix['总计']['账期资金']))
 	print('本周已使用中电资金共%d笔，总额%.2f元，优先进行付款。'%(zd_count,pv.ix['总计']['中电资金']))
+	print('')
+	print('以下为每日的付款需求，请财务部根据账户状况进行付款方案的安排，并通知采购部。')
 	print('---------------------------')
 
 	return pv
@@ -137,7 +137,8 @@ def output(df,time_start,time_end):
 if __name__ == '__main__':
 	time_start = input('请输入开始日期(如\'20170101\'):')
 	time_end = input('请输入结束日期(如\'20170101\'):')
-	print('\n')
+	# date = '20170424'
+	# print(date[-2:])
 	tw = output(df,time_start,time_end)
 	# tw = output(df,'20170418','20170423')
 	# print(tw.ix['总计']['应付总额'])
