@@ -15,9 +15,9 @@ except:
 exchange = {
 	'HKD':'0.9',
 	'USD':'6.91',
-	'EUR':'7.36',
-	'GBP':'8.7',
-	'JPY':'0.063'
+	'EUR':'7.52',
+	'GBP':'8.87',
+	'JPY':'0.064'
 }
 #选择汇率
 def get_Exchange(current):
