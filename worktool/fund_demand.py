@@ -39,8 +39,6 @@ def pay_this_week(data,time_start,time_end):
 	df.index = df['流水号']
 
 
-
-
 	df['RMB'] = df['币种'].map(get_Exchange) * df['要求付款金额']
 	# df['RMB'] = df['RMB'].map(RMB_format)
 	# print(df)
@@ -48,7 +46,7 @@ def pay_this_week(data,time_start,time_end):
 	
 
 #对数据进行透视
-def paymt_pivot(df):
+def paymt_pivot(df,time_start,time_end):
 
 	#获取总体付款数据
 	pv_all = pd.pivot_table(df,index=['要求付款时间'],values=['RMB'],aggfunc=[np.sum])
@@ -125,7 +123,8 @@ def paymt_pivot(df):
 	return pv
 
 def output(df,time_start,time_end):
-	tw = paymt_pivot(pay_this_week(df,time_start,time_end))
+	ptw = pay_this_week(df,time_start,time_end)
+	tw = paymt_pivot(ptw,time_start,time_end)
 	#格式化数据
 	for col in tw.columns:
 		tw[col] = tw[col].apply(RMB_format)
@@ -135,12 +134,10 @@ def output(df,time_start,time_end):
 	return tw
 
 if __name__ == '__main__':
-	time_start = input('请输入开始日期(如\'20170101\'):')
-	time_end = input('请输入结束日期(如\'20170101\'):')
-	# date = '20170424'
-	# print(date[-2:])
-	tw = output(df,time_start,time_end)
-	# tw = output(df,'20170418','20170423')
+	# time_start = input('请输入开始日期(如\'20170101\'):')
+	# time_end = input('请输入结束日期(如\'20170101\'):')
+	# tw = output(df,time_start,time_end)
+	tw = output(df,'20170502','20170505')
 	# print(tw.ix['总计']['应付总额'])
 	
 
