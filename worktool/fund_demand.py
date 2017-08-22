@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
 
 try:
 	data = pd.read_excel('data.xlsx',encoding='utf8')
@@ -13,11 +14,11 @@ except:
 
 # locale.setlocale(locale.LC_ALL,'')
 exchange = {
-	'HKD':'0.9',
-	'USD':'6.91',
-	'EUR':'7.52',
-	'GBP':'8.87',
-	'JPY':'0.064'
+	'HKD':'0.87',
+	'USD':'6.77',
+	'EUR':'8',
+	'GBP':'8.88',
+	'JPY':'0.062'
 }
 #选择汇率
 def get_Exchange(current):
@@ -33,7 +34,10 @@ def change_loc(df,col_to_set,position):
 
 #汇总本周需要付款的订单详情
 def pay_this_week(data,time_start,time_end):
+	
 	df = data[(data['出纳付款时间'].isnull()) & (data['要求付款时间'] >= pd.Timestamp(time_start)) & (data['要求付款时间'] <= pd.Timestamp(time_end))]
+	
+	
 	del df['分组：步骤号']
 	# df['要求付款时间'] = pd.to_datetime(df['要求付款时间'],format='%Y%m')
 	df.index = df['流水号']
@@ -137,7 +141,7 @@ if __name__ == '__main__':
 	# time_start = input('请输入开始日期(如\'20170101\'):')
 	# time_end = input('请输入结束日期(如\'20170101\'):')
 	# tw = output(df,time_start,time_end)
-	tw = output(df,'20170502','20170505')
+	tw = output(df,'20170814','20170818')
 	# print(tw.ix['总计']['应付总额'])
 	
 
